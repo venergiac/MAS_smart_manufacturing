@@ -4,6 +4,7 @@ Hybrid Agentic AI MAS Demonstrator for Prescriptive Maintenance.
 Based on: Farahani, Khan, Wuest (2026) - Journal of Manufacturing Systems.
 Keywords: Agentic AI, Industrial IoT, Predictive Maintenance, Multi-Agent Systems
 """
+import os
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, IsolationForest
@@ -13,8 +14,19 @@ from sklearn.metrics import accuracy_score
 import warnings
 warnings.filterwarnings('ignore')
 
-from langchain.llms import Ollama
-from langchain.agents import initialize_agent, Tool
+try:
+    from langchain.llms import Ollama
+except ImportError:
+    try:
+        from langchain.chat_models import Ollama
+    except ImportError:
+        from langchain import Ollama
+
+try:
+    from langchain.agents import initialize_agent, Tool
+except ImportError:
+    from langchain.agents import initialize_agent
+    from langchain.tools import Tool
 from langchain.agents import AgentType
 
 import paho.mqtt.client as mqtt
