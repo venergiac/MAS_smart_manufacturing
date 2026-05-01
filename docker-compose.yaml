@@ -1,0 +1,50 @@
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:2.0
+    container_name: iiot_mqtt_broker
+    ports: ["1883:1883", "9001:9001"]
+    networks: [iiot_net]
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports: ["11434:11434"]
+    command: sh -c "ollama pull llama2 && ollama serve"
+    networks: [iiot_net]
+
+  sensor-simulator:
+    build: {context: ./src, dockerfile: Dockerfile.simulator}
+    container_name: iiot_sensor_simulator
+    depends_on: [mqtt-broker]
+    environment:
+      - MQTT_BROKER=mqtt-broker
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=iiot/sensors
+      - PUBLISH_INTERVAL_SEC=2
+      - N_MACHINES=10
+    networks: [iiot_net]
+
+  agentic-mas:
+    build: {context: ./src, dockerfile: Dockerfile.mas}
+    container_name: iiot_agentic_mas
+    depends_on: [mqtt-broker, sensor-simulator, ollama]
+    environment:
+      - MQTT_BROKER=mqtt-broker
+      - MQTT_PORT=1883
+      - MODEL_TYPE=classification
+      - ANOMALY_CONTAMINATION=0.05
+      - HITL_MODE=auto_approve
+    volumes: [./results:/app/results]
+    networks: [iiot_net]
+
+  dashboard:
+    image: python:3.11-slim
+    container_name: iiot_dashboard
+    command: python -m http.server 8080
+    volumes: [./results:/app]
+    ports: ["8080:8080"]
+    networks: [iiot_net]
+
+networks:
+  iiot_net:
+    driver: bridge
