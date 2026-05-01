@@ -21,7 +21,11 @@ import paho.mqtt.client as mqtt
 import json
 import time
 
-def get_iiot_dataset(n_samples=500, broker="mqtt-broker", port=1883, topic="iiot/sensors"):
+BROKER = os.getenv("MQTT_BROKER", "localhost")
+PORT = int(os.getenv("MQTT_PORT", 1883))
+TOPIC = os.getenv("MQTT_TOPIC", "iiot/sensors")
+
+def get_iiot_dataset(n_samples=500, broker=BROKER, port=PORT, topic=TOPIC):
     messages = []
     
     def on_message(client, userdata, msg):
@@ -170,6 +174,8 @@ if __name__ == "__main__":
     
     orchestrator = OrchestratorAgent()
 
+    time.sleep(120)  # wait
+
     while True:
         
         # 1. get data
@@ -180,14 +186,14 @@ if __name__ == "__main__":
 
         # 3. (optional) send recommendations to log to file
         for rec in recs:
-            print(f"Recommended action for {rec['machine_id']}: {rec['action']} (Priority: {rec['priority']}, Estimated Cost: {rec['cost']})")
+            print(f"[yellow] Recommended action for {rec['machine_id']}: {rec['action']} (Priority: {rec['priority']}, Estimated Cost: {rec['cost']})")
 
             # Example: publish to a folder /app/results
             with open("/app/results/maintenance_recommendations.txt", "a") as f:
                 f.write(f"{time.ctime()}: {rec['machine_id']} - {rec['action']} (Priority: {rec['priority']}, Estimated Cost: {rec['cost']})\n")
 
         # 4. wait before next cycle
-        time.sleep(30)
+        time.sleep(120)  # Run every 2 minutes (120s)
 
 
 

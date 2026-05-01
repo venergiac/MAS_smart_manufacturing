@@ -12,6 +12,8 @@ The architecture is structured into five interconnected layers:
 - Analytics Layer — an Analysis Agent supporting classification (Random Forest, SVM, Logistic Regression), regression (RF Regressor, Ridge, Lasso, SVR), and anomaly detection (Isolation Forest), with an Adaptive Intelligence module that retries alternative models when performance thresholds (R2 less than 0.1 or accuracy less than 0.6) are not met;
 - Optimization Layer — an Optimization Agent that translates model outputs and feature importance scores into ranked, cost-aware, actionable maintenance recommendations with priority scores computed as (predicted_value minus mean) divided by std.
 
+![](MAS_PDM.png)
+
 ## src
 
 - sensor_simulator.py : publish data on MQTT Broker

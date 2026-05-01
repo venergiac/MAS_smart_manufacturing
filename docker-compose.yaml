@@ -3,13 +3,15 @@ services:
     image: eclipse-mosquitto:2.0
     container_name: iiot_mqtt_broker
     ports: ["1883:1883", "9001:9001"]
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     networks: [iiot_net]
 
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
     ports: ["11434:11434"]
-    command: sh -c "ollama pull llama2 && ollama serve"
+    #command: ollama pull llama2 && ollama serve
     networks: [iiot_net]
 
   sensor-simulator:

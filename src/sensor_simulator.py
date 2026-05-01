@@ -9,6 +9,8 @@ TOPIC = os.getenv("MQTT_TOPIC", "iiot/sensors")
 INTERVAL = float(os.getenv("PUBLISH_INTERVAL_SEC", 2))
 N_MACH = int(os.getenv("N_MACHINES", 10))
 
+time.sleep(60)  # wait
+
 client = mqtt.Client()
 client.connect(BROKER, PORT, 60)
 client.loop_start()
