@@ -12,22 +12,14 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import warnings
+
 warnings.filterwarnings('ignore')
 
-try:
-    from langchain.llms import Ollama
-except ImportError:
-    try:
-        from langchain.chat_models import Ollama
-    except ImportError:
-        from langchain import Ollama
+from langchain_ollama import ChatOllama
 
-try:
-    from langchain.agents import initialize_agent, Tool
-except ImportError:
-    from langchain.agents import initialize_agent
-    from langchain.tools import Tool
-from langchain.agents import AgentType
+
+from langchain.agents import create_agent
+from langchain_core.tools import StructuredTool
 
 import paho.mqtt.client as mqtt
 import json
@@ -132,26 +124,26 @@ class OptimizationAgent:
 
 class OrchestratorAgent:
     def __init__(self):
-        self.llm = Ollama(model="llama2", base_url="http://ollama:11434")
+        self.llm = ChatOllama(model="qwen2.5:14b", base_url="http://ollama:11434")
         self.tools = [
-            Tool(
+            StructuredTool.from_function(
+                func=self._run_preprocessing,
                 name="Preprocessing",
-                description="Preprocess the IIoT dataset by scaling numerical features and preparing for machine learning analysis.",
-                func=self._run_preprocessing
+                description="Preprocess the IIoT dataset by scaling numerical features and preparing for machine learning analysis."
             ),
-            Tool(
+            StructuredTool.from_function(
+                func=self._run_analysis,
                 name="Analysis",
-                description="Perform classification to predict maintenance priority and anomaly detection to identify outliers in the data.",
-                func=self._run_analysis
+                description="Perform classification to predict maintenance priority and anomaly detection to identify outliers in the data."
             ),
-            Tool(
+            StructuredTool.from_function(
+                func=self._run_optimization,
                 name="Optimization",
-                description="Generate optimization recommendations for maintenance based on analysis results, prioritizing high-risk machines.",
-                func=self._run_optimization
+                description="Generate optimization recommendations for maintenance based on analysis results, prioritizing high-risk machines."
             )
         ]
-        self.agent = initialize_agent(self.tools, self.llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
-
+        self.agent = create_agent(model= self.llm, tools=self.tools)
+        
     def _run_preprocessing(self, query):
         pre = PreprocessingAgent()
         self.X, self.y, self.feats = pre.run(self.df)
@@ -174,7 +166,9 @@ class OrchestratorAgent:
     def run(self, df, input_text="run full predictive maintenance analysis"):
         self.df = df
         print("=== AGENTIC AI MAS — PRESCRIPTIVE MAINTENANCE ===")
-        result = self.agent.run(input_text)
+
+        inputs = {"messages": [{"role": "user", "content": input_text}]}
+        result = "".join([chunk for chunk in self.agent.stream(inputs, stream_mode="final")])
         print(f"Agent result: {result}")
         if hasattr(self, 'recs'):
             print(f"Done. Accuracy={self.clf['accuracy']:.4f}, Anomalies={self.ad['n_anomalies']}, Recs={len(self.recs)}")
@@ -184,8 +178,10 @@ class OrchestratorAgent:
 
 if __name__ == "__main__":
     
+    print("[yellow] Starting Agentic AI MAS Demonstrator for Prescriptive Maintenance...")
     orchestrator = OrchestratorAgent()
 
+    print("Waiting for IIoT data to accumulate...")
     time.sleep(120)  # wait
 
     while True:
